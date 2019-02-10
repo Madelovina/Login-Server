@@ -1,13 +1,14 @@
 public class Combo {
 
 
-    String Username;
-    String Password;
-    String complete = Username + "" + Password;
+    private String Username;
+    private String Password;
+    private String complete;
 
     public Combo(String u, String p) {
         Username = u;
         Password = p;
+        complete = Username + ":" + Password;
     }
 
     public String getComplete() {

@@ -1,10 +1,7 @@
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.util.concurrent.TimeUnit;
 
 public class MyClient {
@@ -13,24 +10,15 @@ public class MyClient {
             Socket s = new Socket();
             s.setSoTimeout(1000);
             final int timeOut = (int) TimeUnit.SECONDS.toMillis(1); // 5 sec wait period
-            s.connect(new InetSocketAddress("localhost", 31337), timeOut);
+            s.connect(new InetSocketAddress("localhost", 8888), timeOut);
             DataOutputStream dout = new DataOutputStream(s.getOutputStream());
             dout.writeUTF(rl + str);
             dout.flush();
-            if (rl.equals("l")) {
-                InputStream is = s.getInputStream();
-                int i = is.read();
-                if (i == 1)
-                    return true;
-                return false;
-            }
+            InputStream is = s.getInputStream();
+            int i = is.read();
             s.close();
-            return true;
-        } catch (ConnectException ex) {
-            return false;
-        } catch (SocketException e) {
-            return false;
-        } catch (IOException e) {
+            return i == 1;
+        } catch (Exception ex) {
             return false;
         }
     }

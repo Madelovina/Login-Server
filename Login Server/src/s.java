@@ -5,26 +5,32 @@ import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
 
 // jar cfve server.jar s s.class s$1.class LoginChecker.class LoginList.class
 
 public class s {
-    static File websiteFile = new File("D:\\xampp\\htdocs\\index.html");
-    static PrintWriter out;
-    static BufferedReader br;
 
-    static JFrame frame = new JFrame();
-    static JPanel panel = new JPanel();
-    static JScrollPane pane;
-    static JTextArea label = new JTextArea("Server is on. ", 10, 20);
-    static LoginChecker loginChecker = new LoginChecker("http://localhost:6969"); // http://yak5.ddns.net/
+    private static HashMap<String, String> pwMap = new HashMap<>();
 
+    private static JFrame frame = new JFrame();
+    private static JPanel panel = new JPanel();
+    private static JTextArea label = new JTextArea("Server is on. ", 10, 20);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         UI();
+
+        try {
+            loadHashMap(pwMap);
+        } catch (FileNotFoundException ex) {
+            pushHashMap(pwMap);
+        }
 
         String str = "";
         while (!str.equals("quit")) {
@@ -32,16 +38,14 @@ public class s {
                 ServerSocket ss = new ServerSocket(8888);
                 Socket s = ss.accept();
                 DataInputStream dis = new DataInputStream(s.getInputStream());
-                str = (String) dis.readUTF();
+                str = dis.readUTF();
                 if (str.charAt(0) == 'r')
-                    handleRegister(str);
+                    handleRegister(str, s);
                 else if (str.charAt(0) == 'l')
                     handleLogin(str, s);
                 ss.close();
             } catch (EOFException e) {
-                System.out.println(e);
-            } catch (Exception e) {
-                System.out.println(e);
+                System.out.println(e.toString());
             }
         }
     }
@@ -49,7 +53,7 @@ public class s {
     private static void UI() {
         label.setEditable(false);
         label.setLineWrap(true);
-        pane = new JScrollPane(label);
+        JScrollPane pane = new JScrollPane(label);
         pane.setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_NEVER);
         pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         JButton closeButton = new JButton("Close");
@@ -58,11 +62,9 @@ public class s {
         panel.add(pane);
         panel.add(closeButton);
 
-        closeButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                frame.dispose();
-                System.exit(0);
-            }
+        closeButton.addActionListener(e -> {
+            frame.dispose();
+            System.exit(0);
         });
 
         frame.add(panel);
@@ -71,71 +73,53 @@ public class s {
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
-    private static void handleRegister(String str) {
+    private static void handleRegister(String str, Socket s) {
         try {
             label.setText(str.substring(1));
             panel.repaint();
-            ArrayList<String> doc = getOld(websiteFile);
-            boolean contains = doc.contains("=" + str.substring(1));
-            System.out.println(contains);
-            newDoc(doc, str.substring(1), contains);
-        } catch (FileNotFoundException ex) {
+            OutputStream os = s.getOutputStream();
+            if (pwMap.containsKey(str.substring(1, str.indexOf(":")))) {
+                os.write(0);
+            } else {
+                os.write(1);
+                pwMap.put(str.substring(1, str.indexOf(":")), str.substring(str.indexOf(":") + 1));
+                pushHashMap(pwMap);
+            }
+            os.flush();
+            os.close();
+        } catch (Exception ex) {
             System.out.println(ex);
         }
     }
 
     private static void handleLogin(String str, Socket s) {
         try {
-            int out;
-            loginChecker = new LoginChecker("http://localhost:6969"); // http://yak5.ddns.net/
-            if (loginChecker.comboCheck(str.substring(1))) {
-                out = 1;
-            } else
-                out = 0;
             OutputStream os = s.getOutputStream();
-            os.write(out);
+            if (pwMap.containsKey(str.substring(1, str.indexOf(":"))) && pwMap.get(str.substring(1, str.indexOf(":"))).equals(str.substring(str.indexOf(":") + 1))) {
+                os.write(1);
+            } else {
+                os.write(0);
+            }
             os.flush();
+            os.close();
         } catch (IOException ex) {
             System.out.println(ex);
         }
     }
 
-    private static ArrayList<String> getOld(File file) throws FileNotFoundException {
-        ArrayList<String> out = new ArrayList<String>();
-        br = new BufferedReader(new FileReader(file));
-        String str = "";
-        while (str != null) {
-            try {
-                str = br.readLine();
-                if (!out.contains(str))
-                    out.add(str);
-            } catch (IOException ex) {
-                System.out.println(ex);
-            }
+    private static void loadHashMap(HashMap<String, String> hm) throws Exception {
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("data.properties"));
+        for (String key : properties.stringPropertyNames()) {
+            hm.put(key, properties.get(key).toString());
         }
-        try {
-            br.close();
-        } catch (Exception ex) {
-            System.out.println(ex);
-        }
-        return out;
     }
 
-    private static void newDoc(ArrayList<String> doc, String str, boolean bool) {
-        try {
-            out = new PrintWriter(new BufferedWriter(new FileWriter(websiteFile)));
-            for (int i = 0; i < doc.size(); i++) {
-                if (doc.get(i) != null) {
-                    out.println(doc.get(i));
-                }
-                if (!bool && doc.get(i).contains("=") && doc.get(i).contains(":")) {
-                    out.println("=" + str);
-                    bool = true;
-                }
-            }
-            out.close();
-        } catch (IOException ex) {
-            System.out.println(ex);
+    private static void pushHashMap(HashMap<String, String> hm) throws Exception {
+        Properties properties = new Properties();
+        for (HashMap.Entry<String, String> entry : hm.entrySet()) {
+            properties.put(entry.getKey(), entry.getValue());
         }
+        properties.store(new FileOutputStream("data.properties"), null);
     }
 }
