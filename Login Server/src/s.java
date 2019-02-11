@@ -38,7 +38,7 @@ public class s {
                 ServerSocket ss = new ServerSocket(8888);
                 Socket s = ss.accept();
                 DataInputStream dis = new DataInputStream(s.getInputStream());
-                str = dis.readUTF();
+                str = decrypt(dis.readUTF());
                 if (str.charAt(0) == 'r')
                     handleRegister(str, s);
                 else if (str.charAt(0) == 'l')
@@ -121,5 +121,15 @@ public class s {
             properties.put(entry.getKey(), entry.getValue());
         }
         properties.store(new FileOutputStream("data.properties"), null);
+    }
+
+    private static String decrypt(String str) {
+        try {
+            final EnDeCrypter encrypter = new EnDeCrypter();
+            return str.substring(0, str.indexOf(":") + 1) + encrypter.decrypt(str.substring(str.indexOf(":") + 1));
+        } catch (Exception ex) {
+            System.out.println(ex);
+            return str;
+        }
     }
 }
