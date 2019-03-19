@@ -1,6 +1,8 @@
 # Login Server
 
-This is a a login server and a login client widget. 
+This is a login server and a login client widget. 
+
+![alt text](https://i.imgur.com/8TiyqgZ.png)
 
 Data Handling:
 * HashMaps
