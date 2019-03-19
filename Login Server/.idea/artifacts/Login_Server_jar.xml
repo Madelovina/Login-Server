@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="Login Server:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/Login_Server_jar</output-path>
-    <root id="archive" name="Login Server.jar">
-      <element id="module-output" name="Login Server" />
-    </root>
-  </artifact>
-</component>

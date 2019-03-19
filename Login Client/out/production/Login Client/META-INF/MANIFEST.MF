@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-Class-Path: D:\kkya5\Documents\Code\JAVA\Login\src
-Main-Class: Main.java
-
